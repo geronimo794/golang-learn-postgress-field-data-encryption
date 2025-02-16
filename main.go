@@ -52,6 +52,7 @@ func main() {
 	fmt.Println("Data inserted successfully.")
 
 	getData(db, passphrase, username)
+	getAllData(db, passphrase)
 }
 
 func getData(db *sql.DB, passphrase string, username string) {
@@ -78,6 +79,38 @@ func getData(db *sql.DB, passphrase string, username string) {
 			panic(err)
 		}
 	} else {
+		fmt.Printf("User ID: %d\nUsername: %s\nEmail: %s\n", id, username, decryptedEmail)
+	}
+}
+func getAllData(db *sql.DB, passphrase string) {
+	// SQL statement to retrieve and decrypt data
+	query := `
+    SELECT id, username, pgp_sym_decrypt(email, $1) AS email
+    FROM users
+`
+
+	// Execute the query
+	rows, err := db.Query(query, passphrase)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	// Variables to hold the retrieved data
+	var id int
+	var username string
+	var decryptedEmail string
+
+	// Scan the result into variables
+	for rows.Next() {
+		err := rows.Scan(&id, &username, &decryptedEmail)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				fmt.Println("No user found with the given username.")
+			} else {
+				panic(err)
+			}
+		}
 		fmt.Printf("User ID: %d\nUsername: %s\nEmail: %s\n", id, username, decryptedEmail)
 	}
 }
